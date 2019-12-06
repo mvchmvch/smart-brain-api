@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt-nodejs');
 
 const app = express();
 app.use( bodyParser.json());
@@ -49,6 +50,9 @@ app.get('/profile/:id', (req, res) => {
 })
 
 
+
+
+
 app.put('/image', (req, res) => {
 	
 	const {id} = req.body;
@@ -69,31 +73,38 @@ app.put('/image', (req, res) => {
 })
 
 
-app.post('/signin', (req, res) => {
-	if (req.body.email === database.users[0].email &&
-		req.body.password === database.users[0].password) {
-		res.json('success' )	
-	} else {
-		res.status(400).json('error logging in')
-	}
+
+app.post('/signin', (req, resp) => {
 	
+	database.users.forEach(user => {
+		if (user.email === req.body.email) {
+			bcrypt.compare(req.body.password, user.password, function(err, res) {
+	    		res ? resp.json('success' )
+					: resp.status(400).json('error logging in')
+	    	});
+	    }
+	})
 })
 
 app.post('/register', (req, res) => {
 	
 	const {email, name, password} = req.body;
+	let tmpHash ='';
 
-	database.users.push({
-		id: '125',
-		name: name,
-		email: email,
-		password: password,
-		entries: 0,
-		joined: new Date()
-	})
+	bcrypt.hash(password, null, null, function(err, hash) {
+		tmpHash =  hash;
 	
-	console.log(database.users[database.users.length-1])
-	res.json(database.users[database.users.length-1])
+		database.users.push({
+			id: '125',
+			name: name,
+			email: email,
+			password: hash,
+			entries: 0,
+			joined: new Date()
+		})
+	
+		res.json(database.users[database.users.length-1])
+	});
 })
 
 
@@ -105,25 +116,9 @@ app.listen(3000, () => {
 
 
 
-
 /*
 
-/ --> res = this is working
-/signing --> POST = success/fail
-/register --> POST = user
-/profile/:userId --> GET = user
-/image --> PUT = user
 
-bcrypt.hash(password, null, null, function(err, hash) {
-// Store hash in your password DB.
-});
-
-
-
-// Load hash from your password DB.
-bcrypt.compare("bacon", hash, function(err, res) {
-    // res == true
-});
 bcrypt.compare("veggies", hash, function(err, res) {
     // res = false
 });
