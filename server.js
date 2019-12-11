@@ -2,6 +2,18 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt-nodejs');
 const cors  = require('cors');
+const knex = require('knex');
+
+
+const pg = knex({
+  client: 'pg',
+  connection: {
+    host : '127.0.0.1',
+    user : 'mvch',
+    password : 'mvch',
+    database : 'smart-brain'
+  }
+});
 
 const app = express();
 app.use( bodyParser.json());
@@ -40,16 +52,16 @@ app.get('/profile/:id', (req, res) => {
 	const {id} = req.params;
 	let found = false;
 
-	database.users.forEach(user => {
-		if (user.id === id) {
-			found = true;
-			return res.json(user);
-		}
-	} )
+	pg.select('*').from('users').where({id})
+	.then(user => {
 	
-	if (!found)	 {
-		res.status(404).json('no such user')		
-	}		
+		if(user.length){
+			res.json(user[0]);	
+		} else {
+			res.status(404).json('no such user')
+		}
+	})
+	.catch (err => res.status(404).json('error getting the user'))	
 })
 
 
@@ -102,16 +114,20 @@ app.post('/register', (req, res) => {
 	bcrypt.hash(password, null, null, function(err, hash) {
 		tmpHash =  hash;
 	
-		database.users.push({
-			id: '125',
-			name: name,
-			email: email,
-			password: hash,
-			entries: 0,
+		pg('users')
+		.returning ('*')
+		.insert({
+			email:email,
+			name:name,
 			joined: new Date()
 		})
+		.then(user => {
+			res.json(user[0])	
+		}) 
+		.catch(err => res.status(400).json('Unable to register!'))
+
 	
-		res.json(database.users[database.users.length-1])
+		
 		
 
 	});
