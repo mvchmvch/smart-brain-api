@@ -23,7 +23,7 @@ const app = express();
 app.use( bodyParser.json());
 app.use(cors());
 
-
+app.get('/', (req, res) => {res.send("it is working")})
 app.post('/register', (req, res) => {register.handleRegister(req, res, pg, bcrypt)})
 app.post('/signin', (req, resp) =>  {signin.handleSignin(req, resp, pg, bcrypt)})
 app.get('/profile/:id', (req, res) => {profile.handleProfile(req, res, pg)})
